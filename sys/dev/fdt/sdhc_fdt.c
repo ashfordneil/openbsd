@@ -23,41 +23,40 @@
 #include <machine/fdt.h>
 #include <machine/intr.h>
 
-#include <dev/ofw/openfirm.h>
+#include <dev/ofw/fdt.h>
 #include <dev/ofw/ofw_clock.h>
 #include <dev/ofw/ofw_pinctrl.h>
-#include <dev/ofw/fdt.h>
+#include <dev/ofw/openfirm.h>
 
 #include <dev/sdmmc/sdhcreg.h>
 #include <dev/sdmmc/sdhcvar.h>
 #include <dev/sdmmc/sdmmcvar.h>
 
 struct sdhc_fdt_softc {
-	struct sdhc_softc 	sc;
-	bus_space_tag_t		sc_iot;
-	bus_space_handle_t	sc_ioh;
-	bus_size_t		sc_size;
-	void			*sc_ih;
+	struct sdhc_softc sc;
+	bus_space_tag_t sc_iot;
+	bus_space_handle_t sc_ioh;
+	bus_size_t sc_size;
+	void *sc_ih;
 
-	struct sdhc_host 	*sc_host;
+	struct sdhc_host *sc_host;
 };
 
-int	sdhc_fdt_match(struct device *, void *, void *);
-void	sdhc_fdt_attach(struct device *, struct device *, void *);
+int sdhc_fdt_match(struct device *, void *, void *);
+void sdhc_fdt_attach(struct device *, struct device *, void *);
 
-struct cfattach sdhc_fdt_ca = {
-	sizeof(struct sdhc_fdt_softc), sdhc_fdt_match, sdhc_fdt_attach
-};
+struct cfattach sdhc_fdt_ca = { sizeof(struct sdhc_fdt_softc), sdhc_fdt_match,
+				sdhc_fdt_attach };
 
-int	sdhc_fdt_signal_voltage(struct sdhc_softc *, int);
+int sdhc_fdt_signal_voltage(struct sdhc_softc *, int);
 
 int
 sdhc_fdt_match(struct device *parent, void *match, void *aux)
 {
 	struct fdt_attach_args *faa = aux;
 
-	return OF_is_compatible(faa->fa_node, "arasan,sdhci-5.1")
-		|| OF_is_compatible(faa->fa_node, "brcm,bcm2835-sdhci");
+	return OF_is_compatible(faa->fa_node, "arasan,sdhci-5.1") ||
+	       OF_is_compatible(faa->fa_node, "brcm,bcm2835-sdhci");
 }
 
 void
@@ -74,8 +73,8 @@ sdhc_fdt_attach(struct device *parent, struct device *self, void *aux)
 	sc->sc_iot = faa->fa_iot;
 	sc->sc_size = faa->fa_reg[0].size;
 
-	if (bus_space_map(sc->sc_iot, faa->fa_reg[0].addr,
-	    faa->fa_reg[0].size, 0, &sc->sc_ioh)) {
+	if (bus_space_map(sc->sc_iot, faa->fa_reg[0].addr, faa->fa_reg[0].size,
+			  0, &sc->sc_ioh)) {
 		printf(": can't map registers\n");
 		return;
 	}
@@ -85,8 +84,8 @@ sdhc_fdt_attach(struct device *parent, struct device *self, void *aux)
 	clock_enable_all(faa->fa_node);
 	reset_deassert_all(faa->fa_node);
 
-	sc->sc_ih = fdt_intr_establish(faa->fa_node, IPL_BIO,
-	    sdhc_intr, sc, sc->sc.sc_dev.dv_xname);
+	sc->sc_ih = fdt_intr_establish(faa->fa_node, IPL_BIO, sdhc_intr, sc,
+				       sc->sc.sc_dev.dv_xname);
 	if (sc->sc_ih == NULL) {
 		printf(": can't establish interrupt\n");
 		goto unmap;
@@ -100,7 +99,7 @@ sdhc_fdt_attach(struct device *parent, struct device *self, void *aux)
 	/*
 	 * Arasan controller always uses 1.8V and doesn't like an
 	 * explicit switch.
-	 * 
+	 *
 	 */
 	if (OF_is_compatible(faa->fa_node, "arasan,shdc-5,1"))
 		sc->sc.sc_signal_voltage = sdhc_fdt_signal_voltage;

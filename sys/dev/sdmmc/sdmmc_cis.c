@@ -29,9 +29,9 @@
 u_int32_t sdmmc_cisptr(struct sdmmc_function *);
 
 #ifdef SDMMC_DEBUG
-#define DPRINTF(s)	printf s
+#define DPRINTF(s) printf s
 #else
-#define DPRINTF(s)	/**/
+#define DPRINTF(s) /**/
 #endif
 
 u_int32_t
@@ -57,8 +57,8 @@ sdmmc_cisptr(struct sdmmc_function *sf)
 }
 
 void
-sdmmc_read_cis_funcid(struct sdmmc_function *sf, struct sdmmc_cis *cis,
-		      int reg, u_int8_t tpllen)
+sdmmc_read_cis_funcid(struct sdmmc_function *sf, struct sdmmc_cis *cis, int reg,
+		      u_int8_t tpllen)
 {
 	if (tpllen < 2) {
 		printf("%s: bad CISTPL_FUNCID length\n", DEVNAME(sf->sc));
@@ -70,11 +70,13 @@ sdmmc_read_cis_funcid(struct sdmmc_function *sf, struct sdmmc_cis *cis,
 }
 
 void
-sdmmc_read_cis_funce(struct sdmmc_function *sf, struct sdmmc_cis *cis,
-		     int reg, u_int8_t tpllen)
+sdmmc_read_cis_funce(struct sdmmc_function *sf, struct sdmmc_cis *cis, int reg,
+		     u_int8_t tpllen)
 {
 	const static int speed_exponent[8] = { 10, 100, 1000, 10000 };
-	const static int speed_mantissa[16] = { 0, 10, 12, 13, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 70, 80 };
+	const static int speed_mantissa[16] = {
+		0, 10, 12, 13, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 70, 80
+	};
 
 	int tran_speed;
 	struct sdmmc_function *sf0 = sf->sc->sc_fn0;
@@ -89,7 +91,8 @@ sdmmc_read_cis_funce(struct sdmmc_function *sf, struct sdmmc_cis *cis,
 		sf->csd.read_bl_len |= sdmmc_io_read_1(sf0, reg++) << 8;
 
 		tran_speed = sdmmc_io_read_1(sf0, reg++);
-		sf->csd.tran_speed = speed_exponent[tran_speed & 7] * speed_mantissa[tran_speed >> 3 & 15];
+		sf->csd.tran_speed = speed_exponent[tran_speed & 7] *
+				     speed_mantissa[tran_speed >> 3 & 15];
 	} else if (sf->number == 0) {
 		printf("%s: unexpected CISTPL_FUNCE found in common\n",
 		       DEVNAME(sf->sc));
@@ -98,8 +101,9 @@ sdmmc_read_cis_funce(struct sdmmc_function *sf, struct sdmmc_cis *cis,
 
 		sdiox = SD_IO_CCCR_SDIO_REV(sdmmc_io_read_1(sf0, 0));
 		if ((sdiox == 0 && tpllen < 0x1c) ||
-		    (sdiox != 0  && tpllen < 0x2a)) {
-			printf("%s: bad CISTPL_FUNCE length\n", DEVNAME(sf->sc));
+		    (sdiox != 0 && tpllen < 0x2a)) {
+			printf("%s: bad CISTPL_FUNCE length\n",
+			       DEVNAME(sf->sc));
 			return;
 		}
 
@@ -109,8 +113,8 @@ sdmmc_read_cis_funce(struct sdmmc_function *sf, struct sdmmc_cis *cis,
 }
 
 void
-sdmmc_read_cis_manfid(struct sdmmc_function *sf, struct sdmmc_cis *cis,
-		      int reg, u_int8_t tpllen)
+sdmmc_read_cis_manfid(struct sdmmc_function *sf, struct sdmmc_cis *cis, int reg,
+		      u_int8_t tpllen)
 {
 	struct sdmmc_function *sf0 = sf->sc->sc_fn0;
 	if (tpllen < 4) {
@@ -124,8 +128,8 @@ sdmmc_read_cis_manfid(struct sdmmc_function *sf, struct sdmmc_cis *cis,
 }
 
 void
-sdmmc_read_cis_vers_1(struct sdmmc_function *sf, struct sdmmc_cis *cis,
-		      int reg, u_int8_t tpllen)
+sdmmc_read_cis_vers_1(struct sdmmc_function *sf, struct sdmmc_cis *cis, int reg,
+		      u_int8_t tpllen)
 {
 	struct sdmmc_function *sf0 = sf->sc->sc_fn0;
 	if (tpllen < 2) {
@@ -163,7 +167,7 @@ sdmmc_read_cis(struct sdmmc_function *sf, struct sdmmc_cis *cis)
 
 	reg = (int)sdmmc_cisptr(sf);
 	if (reg < SD_IO_CIS_START ||
-	    reg >= (SD_IO_CIS_START+SD_IO_CIS_SIZE-16)) {
+	    reg >= (SD_IO_CIS_START + SD_IO_CIS_SIZE - 16)) {
 		printf("%s: bad CIS ptr %#x\n", DEVNAME(sf->sc), reg);
 		return 1;
 	}
@@ -178,8 +182,8 @@ sdmmc_read_cis(struct sdmmc_function *sf, struct sdmmc_cis *cis)
 		tpllen = sdmmc_io_read_1(sf0, reg++);
 		if (tpllen == 0) {
 			printf("%s: CIS parse error at %d, "
-			    "tuple code %#x, length %d\n",
-			    DEVNAME(sf->sc), reg, tplcode, tpllen);
+			       "tuple code %#x, length %d\n",
+			       DEVNAME(sf->sc), reg, tplcode, tpllen);
 			break;
 		}
 
@@ -198,7 +202,7 @@ sdmmc_read_cis(struct sdmmc_function *sf, struct sdmmc_cis *cis)
 			break;
 		default:
 			DPRINTF(("%s: unknown tuple code %#x, length %d\n",
-			    DEVNAME(sf->sc), tplcode, tpllen));
+				 DEVNAME(sf->sc), tplcode, tpllen));
 			break;
 		}
 		reg += tpllen;
@@ -213,8 +217,8 @@ sdmmc_print_cis(struct sdmmc_function *sf)
 	struct sdmmc_cis *cis = &sf->cis;
 	int i;
 
-	printf("%s: CIS version %d.%d\n", DEVNAME(sf->sc),
-	    cis->cis1_major, cis->cis1_minor);
+	printf("%s: CIS version %d.%d\n", DEVNAME(sf->sc), cis->cis1_major,
+	       cis->cis1_minor);
 
 	printf("%s: CIS info: ", DEVNAME(sf->sc));
 	for (i = 0; i < 4; i++) {
@@ -226,8 +230,8 @@ sdmmc_print_cis(struct sdmmc_function *sf)
 	}
 	printf("\n");
 
-	printf("%s: Manufacturer code 0x%x, product 0x%x\n",
-	    DEVNAME(sf->sc), cis->manufacturer, cis->product);
+	printf("%s: Manufacturer code 0x%x, product 0x%x\n", DEVNAME(sf->sc),
+	       cis->manufacturer, cis->product);
 
 	printf("%s: function %d: ", DEVNAME(sf->sc), sf->number);
 	switch (sf->cis.function) {

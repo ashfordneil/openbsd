@@ -21,7 +21,6 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
-
 /*-
  * Copyright (c) 2012 The NetBSD Foundation, Inc.
  * All rights reserved.
@@ -53,35 +52,33 @@
 
 #include <sys/types.h>
 #include <sys/atomic.h>
-#include <sys/systm.h>
 #include <sys/malloc.h>
+#include <sys/systm.h>
 
 #include <machine/bus.h>
-#include <machine/intr.h>
 #include <machine/fdt.h>
+#include <machine/intr.h>
 
 #include <dev/ofw/fdt.h>
 #include <dev/ofw/openfirm.h>
 
 #include "bcm2835_mbox.h"
 
-#define DEVNAME(sc)   			((sc)->sc_dev.dv_xname)
+#define DEVNAME(sc) ((sc)->sc_dev.dv_xname)
 
-struct cfdriver bmbox_cd = {
-	NULL, "bmbox", DV_DULL
-};
+struct cfdriver bmbox_cd = { NULL, "bmbox", DV_DULL };
 
 struct bmbox_softc {
-	struct device		sc_dev;
-	bus_space_tag_t		sc_iot;
-	bus_space_handle_t	sc_ioh;
-	bus_dma_tag_t		sc_dmat;
-	void			*sc_ih;
+	struct device sc_dev;
+	bus_space_tag_t sc_iot;
+	bus_space_handle_t sc_ioh;
+	bus_dma_tag_t sc_dmat;
+	void *sc_ih;
 
-	struct mutex		sc_lock;
-	struct mutex		sc_intr_lock;
-	int			sc_chan[BMBOX_NUM_CHANNELS];
-	u_int32_t		sc_mbox[BMBOX_NUM_CHANNELS];
+	struct mutex sc_lock;
+	struct mutex sc_intr_lock;
+	int sc_chan[BMBOX_NUM_CHANNELS];
+	u_int32_t sc_mbox[BMBOX_NUM_CHANNELS];
 };
 
 static volatile void *attached_sc = NULL;
@@ -116,7 +113,7 @@ bmbox_attach(struct device *parent, struct device *self, void *aux)
 	struct fdt_attach_args *faa = aux;
 	bus_addr_t addr;
 	bus_size_t size;
-	
+
 	if (atomic_cas_ptr(&attached_sc, NULL, sc)) {
 		printf(": a similar device as already attached\n");
 		return;
@@ -140,7 +137,7 @@ bmbox_attach(struct device *parent, struct device *self, void *aux)
 	}
 
 	sc->sc_ih = fdt_intr_establish(faa->fa_node, IPL_VM, bmbox_intr, sc,
-			DEVNAME(sc));
+				       DEVNAME(sc));
 	if (sc->sc_ih == NULL) {
 		printf(": failed to establish interrupts\n");
 		goto clean_bus_space_map;
@@ -202,7 +199,7 @@ bmbox_intr_helper(struct bmbox_softc *sc, int broadcast)
 
 	while (!ISSET(bmbox_reg_read(sc, BMBOX_STATUS), BMBOX_STATUS_EMPTY)) {
 		mbox = bmbox_reg_read(sc, BMBOX0_READ);
-		
+
 		chan = mbox & BMBOX_CHANNEL_MASK;
 		data = mbox & ~BMBOX_CHANNEL_MASK;
 		ret = 1;

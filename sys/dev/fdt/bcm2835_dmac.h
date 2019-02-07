@@ -83,47 +83,44 @@
 #define  DMAC_DEBUG_READ_LAST_NOT_SET_ERROR (1<<0)
 
 struct bdmac_conblk {
-	uint32_t	cb_ti;
-#define DMAC_TI_NO_WIDE_BURSTS	(1<<26)
-#define DMAC_TI_WAITS		(((1<<26) - 1) ^ (1<<21))
-#define DMAC_TI_PERMAP		(((1<<21) - 1) ^ (1<<16))
-#define	 DMAC_TI_PERMAP_BASE	(1<<16)
-#define DMAC_TI_BURST_LENGTH	(((1<<16) - 1) ^ (1<<12))
-#define DMAC_TI_SRC_IGNORE	(1<<11)
-#define DMAC_TI_SRC_DREQ	(1<<10)
-#define DMAC_TI_SRC_WIDTH	(1<<9)
-#define DMAC_TI_SRC_INC		(1<<8)
-#define DMAC_TI_DEST_IGNORE	(1<<7)
-#define DMAC_TI_DEST_DREQ	(1<<6)
-#define DMAC_TI_DEST_WIDTH	(1<<5)
-#define DMAC_TI_DEST_INC	(1<<4)
-#define DMAC_TI_WAIT_RESP	(1<<3)
-#define DMAC_TI_TDMODE		(1<<1)
-#define DMAC_TI_INTEN		(1<<0)
-	uint32_t	cb_source_ad;
-	uint32_t	cb_dest_ad;
-	uint32_t	cb_txfr_len;
-#define DMAC_TXFR_LEN_YLENGTH	(((1<<30) - 1) ^ (1<<16))
-#define DMAC_TXFR_LEN_XLENGTH	(((1<<16) - 1) ^ (1<<0))
-	uint32_t	cb_stride;
-#define DMAC_STRIDE_D_STRIDE	(((1<<32) - 1) ^ (1<<16))
-#define DMAC_STRIDE_S_STRIDE	(((1<<16) - 1) ^ (1<<0))
-	uint32_t	cb_nextconbk;
-	uint32_t	cb_padding[2];
+	uint32_t cb_ti;
+#define DMAC_TI_NO_WIDE_BURSTS (1 << 26)
+#define DMAC_TI_WAITS (((1 << 26) - 1) ^ (1 << 21))
+#define DMAC_TI_PERMAP (((1 << 21) - 1) ^ (1 << 16))
+#define  DMAC_TI_PERMAP_BASE (1 << 16)
+#define DMAC_TI_BURST_LENGTH (((1 << 16) - 1) ^ (1 << 12))
+#define DMAC_TI_SRC_IGNORE (1 << 11)
+#define DMAC_TI_SRC_DREQ (1 << 10)
+#define DMAC_TI_SRC_WIDTH (1 << 9)
+#define DMAC_TI_SRC_INC (1 << 8)
+#define DMAC_TI_DEST_IGNORE (1 << 7)
+#define DMAC_TI_DEST_DREQ (1 << 6)
+#define DMAC_TI_DEST_WIDTH (1 << 5)
+#define DMAC_TI_DEST_INC (1 << 4)
+#define DMAC_TI_WAIT_RESP (1 << 3)
+#define DMAC_TI_TDMODE (1 << 1)
+#define DMAC_TI_INTEN (1 << 0)
+	uint32_t cb_source_ad;
+	uint32_t cb_dest_ad;
+	uint32_t cb_txfr_len;
+#define DMAC_TXFR_LEN_YLENGTH (((1 << 30) - 1) ^ (1 << 16))
+#define DMAC_TXFR_LEN_XLENGTH (((1 << 16) - 1) ^ (1 << 0))
+	uint32_t cb_stride;
+#define DMAC_STRIDE_D_STRIDE (((1 << 32) - 1) ^ (1 << 16))
+#define DMAC_STRIDE_S_STRIDE (((1 << 16) - 1) ^ (1 << 0))
+	uint32_t cb_nextconbk;
+	uint32_t cb_padding[2];
 } __packed;
 
-#define DMAC_INT_STATUS		0xfe0
-#define DMAC_ENABLE		0xff0
+#define DMAC_INT_STATUS 0xfe0
+#define DMAC_ENABLE 0xff0
 
-enum bdmac_type {
-	BDMAC_TYPE_NORMAL,
-	BDMAC_TYPE_LITE
-};
+enum bdmac_type { BDMAC_TYPE_NORMAL, BDMAC_TYPE_LITE };
 
 struct bdmac_channel;
 
 struct bdmac_channel *bdmac_alloc(enum bdmac_type, int,
-				void (*)(uint32_t, uint32_t, void *), void *);
+				  void (*)(uint32_t, uint32_t, void *), void *);
 void bdmac_free(struct bdmac_channel *);
 void bdmac_set_conblk_addr(struct bdmac_channel *, bus_addr_t);
 int bdmac_transfer(struct bdmac_channel *);

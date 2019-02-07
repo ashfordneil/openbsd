@@ -48,43 +48,43 @@
 
 #include <sys/types.h>
 #include <sys/atomic.h>
-#include <sys/systm.h>
 #include <sys/malloc.h>
 #include <sys/mutex.h>
+#include <sys/systm.h>
 
 #include <machine/bus.h>
-#include <machine/intr.h>
 #include <machine/fdt.h>
+#include <machine/intr.h>
 
 #include <dev/ofw/fdt.h>
 #include <dev/ofw/openfirm.h>
 
 #include "bcm2835_dmac.h"
 
-#define BDMAC_CHANNELMASK	((1<<12) - 1)
-#define DEVNAME(sc)   			((sc)->sc_dev.dv_xname)
+#define BDMAC_CHANNELMASK ((1 << 12) - 1)
+#define DEVNAME(sc) ((sc)->sc_dev.dv_xname)
 
 struct bdmac_softc {
-	struct device			sc_dev;
-	bus_space_tag_t			sc_iot;
-	bus_space_handle_t		sc_ioh;
-	int				sc_fa_node;
+	struct device sc_dev;
+	bus_space_tag_t sc_iot;
+	bus_space_handle_t sc_ioh;
+	int sc_fa_node;
 
-	struct mutex			sc_lock;
-	struct bdmac_channel	*sc_channels;
-	int				sc_nchannels;
-	u_int32_t			sc_channelmask;
+	struct mutex sc_lock;
+	struct bdmac_channel *sc_channels;
+	int sc_nchannels;
+	u_int32_t sc_channelmask;
 };
 
 static volatile void *attached_sc = NULL;
 
 struct bdmac_channel {
-	struct bdmac_softc	*ch_sc;
-	void				*ch_ih;
-	u_int8_t			ch_index;
-	void				(*ch_callback)(u_int32_t, u_int32_t, void *);
-	void				*ch_callbackarg;
-	u_int32_t			ch_debug;
+	struct bdmac_softc *ch_sc;
+	void *ch_ih;
+	u_int8_t ch_index;
+	void (*ch_callback)(u_int32_t, u_int32_t, void *);
+	void *ch_callbackarg;
+	u_int32_t ch_debug;
 };
 
 int bdmac_match(struct device *, void *, void *);
@@ -96,9 +96,7 @@ struct cfattach bdmac_ca = {
 	bdmac_attach,
 };
 
-struct cfdriver bdmac_cd = {
-	NULL, "dmac", DV_DULL
-};
+struct cfdriver bdmac_cd = { NULL, "dmac", DV_DULL };
 
 /* utilities */
 enum bdmac_type
@@ -168,14 +166,15 @@ bdmac_attach(struct device *parent, struct device *self, void *aux)
 		return;
 	}
 
-	sc->sc_channelmask = OF_getpropint(faa->fa_node, "brcm,dma-channel-mask", -1);
+	sc->sc_channelmask =
+	    OF_getpropint(faa->fa_node, "brcm,dma-channel-mask", -1);
 	sc->sc_channelmask &= BDMAC_CHANNELMASK;
 
 	mtx_init(&sc->sc_lock, IPL_SCHED);
 
 	sc->sc_nchannels = 31 - __builtin_clz(sc->sc_channelmask);
-	sc->sc_channels = malloc(
-		sizeof(*sc->sc_channels) * sc->sc_nchannels, M_DEVBUF, M_WAITOK);
+	sc->sc_channels = malloc(sizeof(*sc->sc_channels) * sc->sc_nchannels,
+				 M_DEVBUF, M_WAITOK);
 
 	for (index = 0; index < sc->sc_nchannels; ++index) {
 		ch = &sc->sc_channels[index];
@@ -185,7 +184,7 @@ bdmac_attach(struct device *parent, struct device *self, void *aux)
 		ch->ch_callbackarg = NULL;
 		ch->ch_ih = NULL;
 
-		if (!ISSET(sc->sc_channelmask, (1<<index))) {
+		if (!ISSET(sc->sc_channelmask, (1 << index))) {
 			continue;
 		}
 
@@ -211,8 +210,8 @@ bdmac_intr(void *arg)
 	cs &= DMAC_CS_INT | DMAC_CS_END | DMAC_CS_ERROR;
 
 	ce = bdmac_read(sc, DMAC_DEBUG(ch->ch_index));
-	ce &= DMAC_DEBUG_READ_ERROR | DMAC_DEBUG_FIFO_ERROR
-	    | DMAC_DEBUG_READ_LAST_NOT_SET_ERROR;
+	ce &= DMAC_DEBUG_READ_ERROR | DMAC_DEBUG_FIFO_ERROR |
+	      DMAC_DEBUG_READ_LAST_NOT_SET_ERROR;
 	bdmac_write(sc, DMAC_DEBUG(ch->ch_index), ce);
 
 	if (ch->ch_callback)
@@ -223,7 +222,7 @@ bdmac_intr(void *arg)
 
 struct bdmac_channel *
 bdmac_alloc(enum bdmac_type type, int ipl,
-	       void (*cb)(u_int32_t, u_int32_t, void *), void *cbarg)
+	    void (*cb)(u_int32_t, u_int32_t, void *), void *cbarg)
 {
 	struct bdmac_softc *sc;
 	struct bdmac_channel *ch = NULL;
@@ -240,7 +239,7 @@ bdmac_alloc(enum bdmac_type type, int ipl,
 
 	mtx_enter(&sc->sc_lock);
 	for (index = 0; index < sc->sc_nchannels; ++index) {
-		if (!ISSET(sc->sc_channelmask, (1<<index)))
+		if (!ISSET(sc->sc_channelmask, (1 << index)))
 			continue;
 		if (bdmac_channel_type(sc->sc_channels[index]) != type)
 			continue;
@@ -260,8 +259,7 @@ bdmac_alloc(enum bdmac_type type, int ipl,
 	KASSERT(ch->ch_ih == NULL);
 
 	ch->ch_ih = fdt_intr_establish_idx(sc->sc_fa_node, ch->ch_index, ipl,
-				       bdmac_intr, ch,
-				       sc->sc_dev.dv_xname);
+					   bdmac_intr, ch, sc->sc_dev.dv_xname);
 
 	if (ch->ch_ih == NULL) {
 		printf("%s: failed to establish interrupt for DMA%d\n",

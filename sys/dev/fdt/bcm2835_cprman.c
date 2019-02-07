@@ -54,9 +54,9 @@
 #include <machine/bootconfig.h>
 #include <machine/fdt.h>
 
-#include <dev/ofw/openfirm.h>
-#include <dev/ofw/ofw_clock.h>
 #include <dev/ofw/fdt.h>
+#include <dev/ofw/ofw_clock.h>
+#include <dev/ofw/openfirm.h>
 
 #include <dev/fdt/bcm2835_mbox.h>
 #include <dev/fdt/bcm2835_mbox_vcprop.h>
@@ -107,9 +107,7 @@ u_int32_t cprman_get_frequency(void *, u_int32_t *);
 void cprman_init_vb_wrapper();
 void cprman_init_vb();
 
-struct cfdriver cprman_cd = {
-	NULL, "cprman", DV_DULL
-};
+struct cfdriver cprman_cd = { NULL, "cprman", DV_DULL };
 
 int
 cprman_match(struct device *parent, void *match, void *aux)
@@ -134,13 +132,12 @@ cprman_attach(struct device *parent, struct device *self, void *aux)
 	clock_register(&sc->sc_cd);
 }
 
-
 u_int32_t
 cprman_get_frequency(void *cookie, u_int32_t *cells)
 {
 	struct request {
-		struct vcprop_buffer_hdr	vb_hdr;
-		struct vcprop_tag_clockrate	vbt_clkrate;
+		struct vcprop_buffer_hdr vb_hdr;
+		struct vcprop_tag_clockrate vbt_clkrate;
 		struct vcprop_tag end;
 	} __attribute((aligned(16), packed));
 
@@ -205,7 +202,8 @@ cprman_get_frequency(void *cookie, u_int32_t *cells)
 	}
 
 	if (req.vbt_clkrate.id == 0) {
-		printf("cprman[unknown]: request to unknown clock type %d\n", cells[0]);
+		printf("cprman[unknown]: request to unknown clock type %d\n",
+		       cells[0]);
 		return 0;
 	}
 
@@ -221,8 +219,8 @@ cprman_get_frequency(void *cookie, u_int32_t *cells)
 	if (vcprop_tag_success_p(&req.vbt_clkrate.tag))
 		return req.vbt_clkrate.rate;
 
-	printf("cprman[unknown]: vcprop result %x:%x\n", req.vb_hdr.vpb_rcode, req.vbt_clkrate.tag.vpt_rcode);
+	printf("cprman[unknown]: vcprop result %x:%x\n", req.vb_hdr.vpb_rcode,
+	       req.vbt_clkrate.tag.vpt_rcode);
 
 	return 0;
 }
-

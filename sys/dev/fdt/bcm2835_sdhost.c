@@ -52,107 +52,105 @@
 #include <sys/systm.h>
 #include <sys/task.h>
 
-#include <machine/intr.h>
 #include <machine/bus.h>
 #include <machine/fdt.h>
+#include <machine/intr.h>
 
-#include <dev/ofw/openfirm.h>
-#include <dev/ofw/ofw_clock.h>
 #include <dev/ofw/fdt.h>
+#include <dev/ofw/ofw_clock.h>
+#include <dev/ofw/openfirm.h>
 
 #include <dev/sdmmc/sdmmcreg.h>
 #include <dev/sdmmc/sdmmcvar.h>
 
 #include <dev/fdt/bcm2835_dmac.h>
 
-#define	SDCMD		0x00
-#define	 SDCMD_NEW	(1 << 15)
-#define	 SDCMD_FAIL	(1 << 14)
-#define	 SDCMD_BUSY	(1 << 11)
-#define	 SDCMD_NORESP	(1 << 10)
-#define	 SDCMD_LONGRESP	(1 << 9)
-#define	 SDCMD_WRITE	(1 << 7)
-#define	 SDCMD_READ	(1 << 6)
-#define	SDARG		0x04
-#define	SDTOUT		0x08
-#define	 SDTOUT_DEFAULT	0xf00000
-#define	SDCDIV		0x0c
-#define	 SDCDIV_MASK	((1 << 11) - 1)
-#define	SDRSP0		0x10
-#define	SDRSP1		0x14
-#define	SDRSP2		0x18
-#define	SDRSP3		0x1c
-#define	SDHSTS		0x20
-#define	 SDHSTS_BUSY	(1 << 10)
-#define	 SDHSTS_BLOCK	(1 << 9)
-#define	 SDHSTS_SDIO	(1 << 8)
-#define	 SDHSTS_REW_TO	(1 << 7)
-#define	 SDHSTS_CMD_TO	(1 << 6)
-#define	 SDHSTS_CRC16_E	(1 << 5)
-#define	 SDHSTS_CRC7_E	(1 << 4)
-#define	 SDHSTS_FIFO_E	(1 << 3)
-#define	 SDHSTS_DATA	(1 << 0)
-#define	SDVDD		0x30
-#define	 SDVDD_POWER	(1 << 0)
-#define	SDEDM		0x34
-#define	 SDEDM_RD_FIFO	(((1 << 19) - 1) ^ ((1 << 14) - 1))
+#define SDCMD 0x00
+#define  SDCMD_NEW (1 << 15)
+#define  SDCMD_FAIL (1 << 14)
+#define  SDCMD_BUSY (1 << 11)
+#define  SDCMD_NORESP (1 << 10)
+#define  SDCMD_LONGRESP (1 << 9)
+#define  SDCMD_WRITE (1 << 7)
+#define  SDCMD_READ (1 << 6)
+#define SDARG 0x04
+#define SDTOUT 0x08
+#define  SDTOUT_DEFAULT 0xf00000
+#define SDCDIV 0x0c
+#define  SDCDIV_MASK ((1 << 11) - 1)
+#define SDRSP0 0x10
+#define SDRSP1 0x14
+#define SDRSP2 0x18
+#define SDRSP3 0x1c
+#define SDHSTS 0x20
+#define  SDHSTS_BUSY (1 << 10)
+#define  SDHSTS_BLOCK (1 << 9)
+#define  SDHSTS_SDIO (1 << 8)
+#define  SDHSTS_REW_TO (1 << 7)
+#define  SDHSTS_CMD_TO (1 << 6)
+#define  SDHSTS_CRC16_E (1 << 5)
+#define  SDHSTS_CRC7_E (1 << 4)
+#define  SDHSTS_FIFO_E (1 << 3)
+#define  SDHSTS_DATA (1 << 0)
+#define SDVDD 0x30
+#define  SDVDD_POWER (1 << 0)
+#define SDEDM 0x34
+#define  SDEDM_RD_FIFO (((1 << 19) - 1) ^ ((1 << 14) - 1))
 #define  SDEDM_RD_FIFO_BASE (1 << 14)
-#define	 SDEDM_WR_FIFO	(((1 << 14) - 1) ^ ((1 << 9) - 1))
+#define  SDEDM_WR_FIFO (((1 << 14) - 1) ^ ((1 << 9) - 1))
 #define  SDEDM_WR_FIFO_BASE (1 << 9)
-#define	SDHCFG		0x38
-#define	 SDHCFG_BUSY_EN	(1 << 10)
-#define	 SDHCFG_BLOCK_EN (1 << 8)
-#define	 SDHCFG_SDIO_EN	(1 << 5)
-#define	 SDHCFG_DATA_EN	(1 << 4)
-#define	 SDHCFG_SLOW	(1 << 3)
-#define	 SDHCFG_WIDE_EXT (1 << 2)
-#define	 SDHCFG_WIDE_INT (1 << 1)
-#define	 SDHCFG_REL_CMD	(1 << 0)
-#define	SDHBCT		0x3c
-#define	SDDATA		0x40
-#define	SDHBLC		0x50
+#define SDHCFG 0x38
+#define  SDHCFG_BUSY_EN (1 << 10)
+#define  SDHCFG_BLOCK_EN (1 << 8)
+#define  SDHCFG_SDIO_EN (1 << 5)
+#define  SDHCFG_DATA_EN (1 << 4)
+#define  SDHCFG_SLOW (1 << 3)
+#define  SDHCFG_WIDE_EXT (1 << 2)
+#define  SDHCFG_WIDE_INT (1 << 1)
+#define  SDHCFG_REL_CMD (1 << 0)
+#define SDHBCT 0x3c
+#define SDDATA 0x40
+#define SDHBLC 0x50
 
 struct bsdhost_softc {
 	/* device */
-	struct device		sc_dev;
+	struct device sc_dev;
 
 	/* interrupts */
-	void			*sc_ih;
+	void *sc_ih;
 
 	/* registers */
-	bus_space_tag_t		sc_iot;
-	bus_space_handle_t	sc_ioh;
-	bus_addr_t		sc_addr;
-	bus_size_t		sc_size;
+	bus_space_tag_t sc_iot;
+	bus_space_handle_t sc_ioh;
+	bus_addr_t sc_addr;
+	bus_size_t sc_size;
 
 	/* direct memory access */
-	bus_dma_tag_t		sc_dmat;
-	bus_dmamap_t		sc_dmamap;
-	bus_dma_segment_t	sc_segs[1];
-	struct bdmac_conblk	*sc_cblk;
-	struct bdmac_channel	*sc_dmac;
+	bus_dma_tag_t sc_dmat;
+	bus_dmamap_t sc_dmamap;
+	bus_dma_segment_t sc_segs[1];
+	struct bdmac_conblk *sc_cblk;
+	struct bdmac_channel *sc_dmac;
 
 	/* synchronisation control */
-	struct mutex		sc_intr_lock;
-	u_int32_t		sc_intr_hsts;
-	u_int32_t		sc_intr_cv;
-	u_int32_t		sc_dma_cv;
-
+	struct mutex sc_intr_lock;
+	u_int32_t sc_intr_hsts;
+	u_int32_t sc_intr_cv;
+	u_int32_t sc_dma_cv;
 
 	/* data transfer stats */
-	u_int			sc_rate;
-	uint32_t		sc_div; /* XXX */
+	u_int sc_rate;
+	uint32_t sc_div; /* XXX */
 
-	int			sc_mmc_width;
-	int			sc_mmc_presnt;
+	int sc_mmc_width;
+	int sc_mmc_presnt;
 
-	u_int32_t		sc_dma_status;
-	u_int32_t		sc_dma_error;
+	u_int32_t sc_dma_status;
+	u_int32_t sc_dma_error;
 
 	/* attached child driver */
-	struct task		sc_attach;
-	struct device		*sc_sdmmc;
-
+	struct task sc_attach;
+	struct device *sc_sdmmc;
 };
 
 /* general driver functions */
@@ -199,9 +197,7 @@ void bsdhost_write(struct bsdhost_softc *, bus_size_t, u_int32_t);
 u_int32_t bsdhost_read(struct bsdhost_softc *, bus_size_t);
 int bsdhost_intr(void *);
 
-struct cfdriver bsdhost_cd = {
-	NULL, "bsdhost", DV_DISK
-};
+struct cfdriver bsdhost_cd = { NULL, "bsdhost", DV_DISK };
 
 int
 bsdhost_match(struct device *parent, void *match, void *aux)
@@ -231,7 +227,7 @@ bsdhost_attach(struct device *parent, struct device *self, void *aux)
 	sc->sc_size = faa->fa_reg[0].size;
 	sc->sc_addr = faa->fa_reg[0].addr;
 	if (bus_space_map(sc->sc_iot, sc->sc_addr, sc->sc_size, 0,
-	    &sc->sc_ioh)) {
+			  &sc->sc_ioh)) {
 		printf(": can't map registers\n");
 		return;
 	}
@@ -245,8 +241,8 @@ bsdhost_attach(struct device *parent, struct device *self, void *aux)
 	sc->sc_rate = clock_get_frequency_idx(faa->fa_node, 0);
 
 	/* load DMA */
-	sc->sc_dmac = bdmac_alloc(BDMAC_TYPE_NORMAL, IPL_SDMMC,
-					 bsdhost_dma_done, sc);
+	sc->sc_dmac =
+	    bdmac_alloc(BDMAC_TYPE_NORMAL, IPL_SDMMC, bsdhost_dma_done, sc);
 	if (sc->sc_dmac == NULL) {
 		printf(": can't open dmac\n");
 		goto clean_clocks;
@@ -268,13 +264,13 @@ bsdhost_attach(struct device *parent, struct device *self, void *aux)
 	memset(sc->sc_cblk, 0, PAGE_SIZE);
 
 	if (bus_dmamap_create(sc->sc_dmat, PAGE_SIZE, 1, PAGE_SIZE, 0,
-	    BUS_DMA_WAITOK, &sc->sc_dmamap)) {
+			      BUS_DMA_WAITOK, &sc->sc_dmamap)) {
 		printf(": can't map bus\n");
 		goto clean_dmamap_unmap;
 	}
 
-	if (bus_dmamap_load(sc->sc_dmat, sc->sc_dmamap, sc->sc_cblk,
-			    PAGE_SIZE, NULL, BUS_DMA_WAITOK | BUS_DMA_WRITE)) {
+	if (bus_dmamap_load(sc->sc_dmat, sc->sc_dmamap, sc->sc_cblk, PAGE_SIZE,
+			    NULL, BUS_DMA_WAITOK | BUS_DMA_WRITE)) {
 		printf(": can't load mapped bus\n");
 		goto clean_dmamap_destroy;
 	}
@@ -327,16 +323,14 @@ bsdhost_attach_sdmmc(void *arg)
 	saa.sch = sc;
 	saa.dmat = sc->sc_dmat;
 	saa.flags = SMF_SD_MODE /*| SMF_MEM_MODE*/;
-	saa.caps = SMC_CAPS_DMA |
-	    SMC_CAPS_MULTI_SEG_DMA |
-	    SMC_CAPS_SD_HIGHSPEED |
-	    SMC_CAPS_MMC_HIGHSPEED |
-	    SMC_CAPS_4BIT_MODE;
+	saa.caps = SMC_CAPS_DMA | SMC_CAPS_MULTI_SEG_DMA |
+		   SMC_CAPS_SD_HIGHSPEED | SMC_CAPS_MMC_HIGHSPEED |
+		   SMC_CAPS_4BIT_MODE;
 
 	sc->sc_sdmmc = config_found(&sc->sc_dev, &saa, NULL);
 }
 
-int 
+int
 bsdhost_detach(struct device *self, int flags)
 {
 	struct bsdhost_softc *sc = (struct bsdhost_softc *)self;
@@ -350,7 +344,6 @@ bsdhost_detach(struct device *self, int flags)
 
 	return 0;
 }
-
 
 int
 bsdhost_host_reset(sdmmc_chipset_handle_t sch)
@@ -497,7 +490,8 @@ bsdhost_exec_command(sdmmc_chipset_handle_t sch, struct sdmmc_command *cmd)
 
 		cmd->c_resid = cmd->c_datalen;
 		cmd->c_error = bsdhost_dma_transfer(sc, cmd);
-		if (cmd->c_error != 0) { line = __LINE__;
+		if (cmd->c_error != 0) {
+			line = __LINE__;
 			goto done;
 		}
 	}
@@ -507,17 +501,20 @@ bsdhost_exec_command(sdmmc_chipset_handle_t sch, struct sdmmc_command *cmd)
 
 	if (cmd->c_datalen > 0) {
 		cmd->c_error = bsdhost_dma_wait(sc, cmd);
-		if (cmd->c_error != 0) { line = __LINE__;
+		if (cmd->c_error != 0) {
+			line = __LINE__;
 			goto done;
 		}
 	}
 
 	cmd->c_error = bsdhost_wait_idle(sc, 5000);
-	if (cmd->c_error != 0) { line = __LINE__;
+	if (cmd->c_error != 0) {
+		line = __LINE__;
 		goto done;
 	}
 
-	if (ISSET(bsdhost_read(sc, SDCMD), SDCMD_FAIL)) { line = __LINE__;
+	if (ISSET(bsdhost_read(sc, SDCMD), SDCMD_FAIL)) {
+		line = __LINE__;
 		cmd->c_error = EIO;
 		goto done;
 	}
@@ -530,11 +527,11 @@ bsdhost_exec_command(sdmmc_chipset_handle_t sch, struct sdmmc_command *cmd)
 			cmd->c_resp[3] = bsdhost_read(sc, SDRSP3);
 			if (ISSET(cmd->c_flags, SCF_RSP_CRC)) {
 				cmd->c_resp[0] = (cmd->c_resp[0] >> 8) |
-					(cmd->c_resp[1] << 24);
+						 (cmd->c_resp[1] << 24);
 				cmd->c_resp[1] = (cmd->c_resp[1] >> 8) |
-					(cmd->c_resp[2] << 24);
+						 (cmd->c_resp[2] << 24);
 				cmd->c_resp[2] = (cmd->c_resp[2] >> 8) |
-					(cmd->c_resp[3] << 24);
+						 (cmd->c_resp[3] << 24);
 				cmd->c_resp[3] = (cmd->c_resp[3] >> 8);
 			}
 		} else {
@@ -550,7 +547,7 @@ done:
 
 	if (cmd->c_error) {
 		printf("%s: line %u, command %d error %d\n", DEVNAME(sc), line,
-		    cmd->c_opcode, cmd->c_error);
+		       cmd->c_opcode, cmd->c_error);
 	}
 }
 
@@ -577,7 +574,8 @@ bsdhost_dma_wait(struct bsdhost_softc *sc, struct sdmmc_command *cmd)
 	int error = 0;
 
 	while (sc->sc_dma_status == 0 && sc->sc_dma_error == 0) {
-		error = msleep(&sc->sc_dma_cv, &sc->sc_intr_lock, PPAUSE, "pause", 50);
+		error = msleep(&sc->sc_dma_cv, &sc->sc_intr_lock, PPAUSE,
+			       "pause", 50);
 		if (error == EWOULDBLOCK) {
 			printf("%s: transfer timeout!\n", DEVNAME(sc));
 			bdmac_halt(sc->sc_dmac);
@@ -609,19 +607,19 @@ bsdhost_dma_transfer(struct bsdhost_softc *sc, struct sdmmc_command *cmd)
 	for (seg = 0; seg < cmd->c_dmamap->dm_nsegs; seg++) {
 		if (sizeof(cmd->c_dmamap->dm_segs[seg].ds_addr) >
 		    sizeof(sc->sc_cblk[seg].cb_source_ad)) {
-			if (cmd->c_dmamap->dm_segs[seg].ds_addr >
-			    0xffffffffU)
+			if (cmd->c_dmamap->dm_segs[seg].ds_addr > 0xffffffffU)
 				return (EFBIG);
 		}
 		sc->sc_cblk[seg].cb_ti = 13 * DMAC_TI_PERMAP_BASE;
-		sc->sc_cblk[seg].cb_txfr_len = cmd->c_dmamap->dm_segs[seg].ds_len;
+		sc->sc_cblk[seg].cb_txfr_len =
+		    cmd->c_dmamap->dm_segs[seg].ds_len;
 		const bus_addr_t ad_sddata = sc->sc_addr + SDDATA;
 
 		/*
 		 * All transfers are assumed to be multiples of 32 bits
 		 */
 		KASSERTMSG((sc->sc_cblk[seg].cb_txfr_len & 0x3) == 0,
-			    "seg %zu len %d", seg, sc->sc_cblk[seg].cb_txfr_len);
+			   "seg %zu len %d", seg, sc->sc_cblk[seg].cb_txfr_len);
 		/* Use 128-bit mode if transfer is a multiple of 16 bytes.  */
 		if (ISSET(cmd->c_flags, SCF_CMD_READ)) {
 			sc->sc_cblk[seg].cb_ti |= DMAC_TI_DEST_INC;
@@ -630,7 +628,7 @@ bsdhost_dma_transfer(struct bsdhost_softc *sc, struct sdmmc_command *cmd)
 			sc->sc_cblk[seg].cb_ti |= DMAC_TI_SRC_DREQ;
 			sc->sc_cblk[seg].cb_source_ad = ad_sddata;
 			sc->sc_cblk[seg].cb_dest_ad =
-				cmd->c_dmamap->dm_segs[seg].ds_addr;
+			    cmd->c_dmamap->dm_segs[seg].ds_addr;
 		} else {
 			sc->sc_cblk[seg].cb_ti |= DMAC_TI_SRC_INC;
 			if ((sc->sc_cblk[seg].cb_txfr_len & 0xf) == 0)
@@ -638,7 +636,7 @@ bsdhost_dma_transfer(struct bsdhost_softc *sc, struct sdmmc_command *cmd)
 			sc->sc_cblk[seg].cb_ti |= DMAC_TI_DEST_DREQ;
 			sc->sc_cblk[seg].cb_ti |= DMAC_TI_WAIT_RESP;
 			sc->sc_cblk[seg].cb_source_ad =
-				cmd->c_dmamap->dm_segs[seg].ds_addr;
+			    cmd->c_dmamap->dm_segs[seg].ds_addr;
 			sc->sc_cblk[seg].cb_dest_ad = ad_sddata;
 		}
 		sc->sc_cblk[seg].cb_stride = 0;
@@ -647,8 +645,8 @@ bsdhost_dma_transfer(struct bsdhost_softc *sc, struct sdmmc_command *cmd)
 			sc->sc_cblk[seg].cb_nextconbk = 0;
 		} else {
 			sc->sc_cblk[seg].cb_nextconbk =
-				sc->sc_dmamap->dm_segs[0].ds_addr +
-				sizeof(struct bdmac_conblk) * (seg + 1);
+			    sc->sc_dmamap->dm_segs[0].ds_addr +
+			    sizeof(struct bdmac_conblk) * (seg + 1);
 		}
 		sc->sc_cblk[seg].cb_padding[0] = 0;
 		sc->sc_cblk[seg].cb_padding[1] = 0;
@@ -662,8 +660,7 @@ bsdhost_dma_transfer(struct bsdhost_softc *sc, struct sdmmc_command *cmd)
 	sc->sc_dma_status = 0;
 	sc->sc_dma_error = 0;
 
-	bdmac_set_conblk_addr(sc->sc_dmac,
-				     sc->sc_dmamap->dm_segs[0].ds_addr);
+	bdmac_set_conblk_addr(sc->sc_dmac, sc->sc_dmamap->dm_segs[0].ds_addr);
 	error = bdmac_transfer(sc->sc_dmac);
 
 	if (error)
@@ -715,7 +712,6 @@ bsdhost_intr(void *priv)
 		sc->sc_intr_hsts |= hsts;
 		wakeup(&sc->sc_intr_cv);
 	}
-		
 
 	mtx_leave(&sc->sc_intr_lock);
 
