@@ -325,7 +325,7 @@ bsdhost_attach_sdmmc(void *arg)
 	saa.flags = SMF_SD_MODE /*| SMF_MEM_MODE*/;
 	saa.caps = SMC_CAPS_DMA | SMC_CAPS_MULTI_SEG_DMA |
 		   SMC_CAPS_SD_HIGHSPEED | SMC_CAPS_MMC_HIGHSPEED |
-		   SMC_CAPS_4BIT_MODE;
+		   SMC_CAPS_4BIT_MODE | SMC_CAPS_SINGLE_ONLY;
 
 	sc->sc_sdmmc = config_found(&sc->sc_dev, &saa, NULL);
 }
